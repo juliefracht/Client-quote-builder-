@@ -23,8 +23,8 @@ textarea{resize:vertical;min-height:60px;line-height:1.5}
 .lane-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:10px}
 .lane-table th{background:#f0f4f8;padding:6px 8px;text-align:left;font-weight:600;color:#555;border-bottom:1px solid #e0e3e8;white-space:nowrap}
 .lane-table td{padding:4px 5px;border-bottom:1px solid #f0f0f0;vertical-align:middle}
-.lane-table input,.lane-table select{padding:4px 6px;font-size:12px;border:1px solid #d0d5dd;border-radius:4px}
-.w-pol{min-width:120px}.w-pod{min-width:120px}.w-eq{width:80px}.w-num{width:75px}.w-sur{min-width:140px}
+.lane-table input{padding:4px 6px;font-size:12px;border:1px solid #d0d5dd;border-radius:4px}
+.w-pol{min-width:120px}.w-pod{min-width:120px}.w-eq{width:80px}.w-num{width:75px}
 .sell-cell{font-weight:600;color:#003366;padding:4px 10px;white-space:nowrap}
 .gp-positive{color:#065f46}
 .btn{display:inline-block;padding:7px 16px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:background .15s}
@@ -35,6 +35,372 @@ textarea{resize:vertical;min-height:60px;line-height:1.5}
 .btn-del{background:#fee2e2;color:#991b1b;border:none}.btn-del:hover{background:#fca5a5}
 .btn-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
 .totals{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+.tot-card{background:#f8f9fb;border-radius:6px;padding:10px 12px}
+.tot-lbl{font-size:11px;color:#888;margin-bottom:3px}
+.tot-val{font-size:18px;font-weight:600;color:#003366}
+.output-box{background:#f8f9fb;border:1px solid #e0e3e8;border-radius:8px;padding:1rem 1.25rem;font-family:'Courier New',monospace;font-size:12px;white-space:pre-wrap;line-height:1.7;color:#1a1a2e;max-height:500px;overflow-y:auto}
+.copy-success{font-size:12px;color:#065f46;font-weight:600;display:none;margin-left:8px}
+.disclaimer{font-size:11px;color:#999;text-align:center;margin-top:1.5rem;line-height:1.6}
+.sur-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:10px}
+.sur-table th{background:#f0f4f8;padding:6px 8px;text-align:left;font-weight:600;color:#555;border-bottom:1px solid #e0e3e8}
+.sur-table td{padding:4px 5px;border-bottom:1px solid #f0f0f0;vertical-align:middle}
+.sur-table input{padding:4px 6px;font-size:12px;border:1px solid #d0d5dd;border-radius:4px;width:100%}
+@media(max-width:540px){.grid2,.grid3,.totals{grid-template-columns:1fr 1fr}.lane-table{font-size:11px}}
+@media print{
+  body{background:#fff;padding:0}
+  .no-print{display:none!important}
+  .card{border:1px solid #ccc}
+  .output-box{max-height:none;border:none;background:#fff;padding:0}
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div>
+      <div class="logo-box">FRACHT GROUP</div>
+      <h1>Client Quote Builder</h1>
+    </div>
+    <div class="quote-meta no-print">
+      <div id="quote-ref-display" style="font-size:14px;font-weight:600;color:#003366">Quote #001</div>
+      <div id="date-meta" style="margin-top:2px"></div>
+    </div>
+  </header>
+
+  <div class="card">
+    <div class="sec-label">Quote details</div>
+    <div class="grid3">
+      <div><label>Quote #</label><input type="text" id="quote-num" value="001" oninput="document.getElementById('quote-ref-display').textContent='Quote #'+this.value"/></div>
+      <div><label>Valid from</label><input type="date" id="valid-from" onchange="updateDateMeta()"/></div>
+      <div><label>Valid to</label><input type="date" id="valid-to" onchange="updateDateMeta()"/></div>
+    </div>
+    <div class="grid2">
+      <div><label>Customer name</label><input type="text" id="customer" placeholder="e.g. Timbro Trading S.A."/></div>
+      <div><label>Commodity</label><input type="text" id="commodity" placeholder="e.g. Sugar"/></div>
+    </div>
+    <div class="grid3">
+      <div><label>Carrier</label><input type="text" id="carrier" placeholder="e.g. MSC"/></div>
+      <div><label>Mode</label>
+        <select id="mode">
+          <option value="">— Select —</option>
+          <option>FCL – Port to Port</option>
+          <option>FCL – Door to Port</option>
+          <option>FCL – Port to Door</option>
+          <option>FCL – Door to Door</option>
+          <option>LCL – Port to Port</option>
+          <option>Breakbulk</option>
+        </select>
+      </div>
+      <div><label>Currency</label>
+        <select id="currency">
+          <option>USD</option><option>EUR</option><option>BRL</option><option>ARS</option><option>CAD</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sec-label">Free time & detention</div>
+    <div class="grid2">
+      <div><label>Origin (POL) free time (calendar days)</label><input type="number" id="ft-pol" placeholder="e.g. 10" min="0"/></div>
+      <div><label>Destination (POD) free time (working days)</label><input type="number" id="ft-pod" placeholder="e.g. 8" min="0"/></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sec-label">Rate lanes</div>
+    <div style="overflow-x:auto">
+      <table class="lane-table">
+        <thead>
+          <tr>
+            <th>Origin (POL)</th>
+            <th>Destination (POD)</th>
+            <th>Equipment</th>
+            <th>Buy rate</th>
+            <th>GP ($)</th>
+            <th>Sell rate</th>
+            <th class="no-print"></th>
+          </tr>
+        </thead>
+        <tbody id="lane-body"></tbody>
+      </table>
+    </div>
+    <div class="btn-row no-print">
+      <button class="btn-sm btn-add" onclick="addLane()">+ Add lane</button>
+      <button class="btn-sm btn-secondary" style="font-size:12px;padding:5px 11px;" onclick="bulkGP()">Set GP for all lanes</button>
+    </div>
+    <div class="totals" id="totals"></div>
+  </div>
+
+  <div class="card">
+    <div class="sec-label">Surcharges — Subject to</div>
+    <div style="overflow-x:auto">
+      <table class="sur-table">
+        <thead>
+          <tr>
+            <th style="min-width:180px">Surcharge name</th>
+            <th style="min-width:160px">Amount / note</th>
+            <th class="no-print" style="width:50px"></th>
+          </tr>
+        </thead>
+        <tbody id="sur-body"></tbody>
+      </table>
+    </div>
+    <div class="btn-row no-print">
+      <button class="btn-sm btn-add" onclick="addSurcharge()">+ Add surcharge</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sec-label">Conditions</div>
+    <textarea id="conditions">Subject to equipment and space availability at time of booking.
+CUC applicable if MSC chassis is used at destination.
+Rates subject to GRI and market conditions with prior notice.
+Local charges (THC, documentation, customs, inland) quoted separately upon request.</textarea>
+  </div>
+
+  <div class="card">
+    <div class="sec-label">Additional notes</div>
+    <textarea id="notes" placeholder="Any additional remarks for this customer..."></textarea>
+  </div>
+
+  <div class="btn-row no-print" style="margin-bottom:1rem">
+    <button class="btn btn-primary" onclick="generateEmail()">Generate quote email</button>
+    <button class="btn btn-secondary" onclick="window.print()">Print / PDF</button>
+    <button class="btn btn-secondary" onclick="resetForm()">Reset form</button>
+    <span class="copy-success" id="copy-ok">Copied to clipboard!</span>
+  </div>
+
+  <div class="card" id="output-card" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="sec-label" style="margin:0">Quote email — ready to send</div>
+      <button class="btn-sm btn-add no-print" onclick="copyEmail()">Copy to clipboard</button>
+    </div>
+    <div class="output-box" id="output-box"></div>
+  </div>
+
+  <div class="disclaimer">
+    Rates are indicative and subject to space confirmation, carrier approval, and market conditions.<br>
+    Valid for the period specified. For internal use — confirm with commercial team before sending.
+  </div>
+</div>
+
+<script>
+var lanes = [];
+var surcharges = [];
+
+function sell(l){ return (parseFloat(l.buy)||0)+(parseFloat(l.gp)||0); }
+function fmt(n){ return '$'+Math.round(n).toLocaleString('en-US'); }
+function esc(s){ return (s||'').replace(/"/g,'&quot;'); }
+
+function renderLanes(){
+  var tb = document.getElementById('lane-body');
+  var html = '';
+  for(var i=0;i<lanes.length;i++){
+    var l=lanes[i];
+    html+=`<tr>
+      <td><input class="w-pol" type="text" placeholder="e.g. Buenos Aires" value="${esc(l.pol)}" data-i="${i}" data-f="pol" onchange="updateLane(this)"/></td>
+      <td><input class="w-pod" type="text" placeholder="e.g. New York" value="${esc(l.pod)}" data-i="${i}" data-f="pod" onchange="updateLane(this)"/></td>
+      <td><input class="w-eq" type="text" value="${esc(l.equip)}" data-i="${i}" data-f="equip" onchange="updateLane(this)"/></td>
+      <td><input class="w-num" type="number" value="${l.buy}" min="0" data-i="${i}" data-f="buy" onchange="updateLaneNum(this)"/></td>
+      <td><input class="w-num" type="number" value="${l.gp}" min="0" data-i="${i}" data-f="gp" onchange="updateLaneNum(this)"/></td>
+      <td class="sell-cell">${fmt(sell(l))}</td>
+      <td class="no-print"><button class="btn-sm btn-del" onclick="deleteLane(${i})">✕</button></td>
+    </tr>`;
+  }
+  tb.innerHTML=html;
+  renderTotals();
+}
+
+function updateLane(el){ lanes[el.dataset.i][el.dataset.f]=el.value; }
+function updateLaneNum(el){ lanes[el.dataset.i][el.dataset.f]=parseFloat(el.value)||0; renderTotals(); }
+
+function renderTotals(){
+  var sells=lanes.map(sell), gps=lanes.map(function(l){return parseFloat(l.gp)||0;}), n=lanes.length;
+  var avgGP=n?Math.round(gps.reduce(function(a,b){return a+b;},0)/n):0;
+  var avgSell=n?Math.round(sells.reduce(function(a,b){return a+b;},0)/n):0;
+  var minSell=n?Math.min.apply(null,sells):0, maxSell=n?Math.max.apply(null,sells):0;
+  document.getElementById('totals').innerHTML=
+    '<div class="tot-card"><div class="tot-lbl">Lanes</div><div class="tot-val">'+n+'</div></div>'+
+    '<div class="tot-card"><div class="tot-lbl">Avg GP / cntr</div><div class="tot-val gp-positive">'+fmt(avgGP)+'</div></div>'+
+    '<div class="tot-card"><div class="tot-lbl">Avg sell rate</div><div class="tot-val">'+fmt(avgSell)+'</div></div>'+
+    '<div class="tot-card"><div class="tot-lbl">Range</div><div class="tot-val" style="font-size:13px">'+fmt(minSell)+' – '+fmt(maxSell)+'</div></div>';
+}
+
+function addLane(){ lanes.push({pol:'',pod:'',equip:'40DV/HC',buy:0,gp:300}); renderLanes(); }
+function deleteLane(i){ lanes.splice(i,1); renderLanes(); }
+function bulkGP(){
+  var v=prompt('Set GP (USD) for all lanes:','300');
+  var gp=parseFloat(v);
+  if(!isNaN(gp)&&v!==null){ lanes.forEach(function(l){l.gp=gp;}); renderLanes(); }
+}
+
+function renderSurcharges(){
+  var tb=document.getElementById('sur-body');
+  var html='';
+  for(var i=0;i<surcharges.length;i++){
+    var s=surcharges[i];
+    html+=`<tr>
+      <td><input type="text" placeholder="e.g. BAF, USC, THC..." value="${esc(s.name)}" data-i="${i}" data-f="name" onchange="updateSur(this)"/></td>
+      <td><input type="text" placeholder="e.g. USD 150 / As per tariff" value="${esc(s.value)}" data-i="${i}" data-f="value" onchange="updateSur(this)"/></td>
+      <td class="no-print"><button class="btn-sm btn-del" onclick="deleteSurcharge(${i})">✕</button></td>
+    </tr>`;
+  }
+  tb.innerHTML=html;
+}
+function updateSur(el){ surcharges[el.dataset.i][el.dataset.f]=el.value; }
+function addSurcharge(){ surcharges.push({name:'',value:''}); renderSurcharges(); }
+function deleteSurcharge(i){ surcharges.splice(i,1); renderSurcharges(); }
+
+function fmtDate(d){
+  if(!d) return '';
+  var parts=d.split('-'), mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return parseInt(parts[2])+' '+mo[parseInt(parts[1])-1]+' '+parts[0];
+}
+function updateDateMeta(){
+  var f=document.getElementById('valid-from').value, t=document.getElementById('valid-to').value;
+  if(f&&t) document.getElementById('date-meta').textContent=fmtDate(f)+' – '+fmtDate(t);
+}
+
+function generateEmail(){
+  var customer = document.getElementById('customer').value.trim();
+  var commodity = document.getElementById('commodity').value.trim();
+  var carrierVal = document.getElementById('carrier').value.trim();
+  var mode = document.getElementById('mode').value.trim();
+  var cur = document.getElementById('currency').value.trim();
+  var qn = document.getElementById('quote-num').value.trim();
+  var from = fmtDate(document.getElementById('valid-from').value);
+  var to = fmtDate(document.getElementById('valid-to').value);
+  var ftpol = document.getElementById('ft-pol').value.trim();
+  var ftpod = document.getElementById('ft-pod').value.trim();
+  var conditions = document.getElementById('conditions').value.trim();
+  var notes = document.getElementById('notes').value.trim();
+
+  var sep = '────────────────────────────────────────';
+
+  // Header
+  var headerLines = [];
+  if(qn) headerLines.push('QUOTE REFERENCE : '+qn);
+  if(customer) headerLines.push('CUSTOMER        : '+customer);
+  if(commodity) headerLines.push('COMMODITY       : '+commodity);
+  if(carrierVal) headerLines.push('CARRIER         : '+carrierVal);
+  if(mode) headerLines.push('MODE            : '+mode);
+  if(cur) headerLines.push('CURRENCY        : '+cur);
+  if(from||to) headerLines.push('VALIDITY        : '+(from||'[date]')+' – '+(to||'[date]'));
+
+  // Rate lanes — skip rows where both POL and POD are blank
+  var validLanes = lanes.filter(function(l){ return l.pol.trim()||l.pod.trim(); });
+  var grouped = {};
+  validLanes.forEach(function(l){
+    var k = l.pol.trim()||'Origin TBC';
+    var p = l.pod.trim()||'Destination TBC';
+    if(!grouped[k]) grouped[k]={};
+    if(!grouped[k][p]) grouped[k][p]=[];
+    grouped[k][p].push(l);
+  });
+  var rateBlock='';
+  Object.keys(grouped).forEach(function(pol){
+    rateBlock+='  Origin: '+pol+'\n';
+    Object.keys(grouped[pol]).forEach(function(pod){
+      rateBlock+='  Destination: '+pod+'\n';
+      grouped[pol][pod].forEach(function(r){
+        var eq=(r.equip||''); while(eq.length<10) eq+=' ';
+        rateBlock+='    '+eq+'  '+cur+' '+sell(r).toLocaleString('en-US')+'\n';
+      });
+      rateBlock+='\n';
+    });
+  });
+
+  // Free time
+  var freeTimeBlock='';
+  if(ftpol||ftpod){
+    freeTimeBlock='FREE TIME\n';
+    if(ftpol) freeTimeBlock+='  Origin (POL)      : '+ftpol+' calendar days\n';
+    if(ftpod) freeTimeBlock+='  Destination (POD) : '+ftpod+' working days (demurrage & detention)\n';
+    freeTimeBlock+='\n';
+  }
+
+  // Surcharges
+  var validSur = surcharges.filter(function(s){ return s.name.trim(); });
+  var surBlock='';
+  if(validSur.length){
+    surBlock = validSur.map(function(s){
+      return '  · '+s.name.trim()+(s.value.trim()?' — '+s.value.trim():'');
+    }).join('\n');
+  } else {
+    surBlock='  As per carrier tariff';
+  }
+
+  // Conditions
+  var condLines='';
+  if(conditions){
+    condLines = conditions.split('\n').map(function(l){ return '  · '+l.trim(); }).filter(function(l){ return l.trim()!=='  ·'; }).join('\n');
+  }
+
+  var email =
+'Dear '+(customer||'Team')+',\n\n'+
+'Please find below our ocean freight rate offer for your consideration.\n\n'+
+sep+'\n'+
+headerLines.join('\n')+'\n'+
+sep+'\n\n';
+
+  if(validLanes.length){
+    email+='FREIGHT RATES ('+cur+' per container, all-in ocean freight)\n\n'+rateBlock;
+  }
+
+  email+=sep+'\n';
+  if(freeTimeBlock) email+=freeTimeBlock;
+  if(validSur.length){
+    email+='SUBJECT TO SURCHARGES\n'+surBlock+'\n\n';
+  }
+  if(condLines){
+    email+='CONDITIONS\n'+condLines+'\n';
+  }
+  email+=sep+'\n';
+  if(notes) email+='\nNOTES\n  '+notes+'\n\n'+sep+'\n';
+
+  email+='\nWe look forward to supporting your shipment program. Please let us know your expected volumes and preferred loading dates so we can confirm space and proceed with bookings.\n\n'+
+'Best regards,\n\n'+
+'Julieta Gimenez\n'+
+'Fracht Group\n';
+
+  document.getElementById('output-card').style.display='block';
+  document.getElementById('output-box').textContent=email;
+  document.getElementById('output-card').scrollIntoView({behavior:'smooth'});
+}
+
+function copyEmail(){
+  navigator.clipboard.writeText(document.getElementById('output-box').textContent)
+    .then(function(){ var ok=document.getElementById('copy-ok'); ok.style.display='inline'; setTimeout(function(){ok.style.display='none';},2500); })
+    .catch(function(){ alert('Copy failed — please select and copy manually.'); });
+}
+
+function resetForm(){
+  if(!confirm('Reset all fields?')) return;
+  lanes=[]; surcharges=[];
+  ['customer','commodity','carrier','notes'].forEach(function(id){ document.getElementById(id).value=''; });
+  document.getElementById('quote-num').value='001';
+  document.getElementById('quote-ref-display').textContent='Quote #001';
+  document.getElementById('mode').value='';
+  document.getElementById('ft-pol').value='';
+  document.getElementById('ft-pod').value='';
+  document.getElementById('output-card').style.display='none';
+  renderLanes(); renderSurcharges();
+}
+
+(function(){
+  var today=new Date(), pad=function(n){return String(n).padStart(2,'0');};
+  var y=today.getFullYear(), m=pad(today.getMonth()+1), d=pad(today.getDate());
+  document.getElementById('valid-from').value=y+'-'+m+'-'+d;
+  var end=new Date(today); end.setMonth(end.getMonth()+3);
+  document.getElementById('valid-to').value=end.getFullYear()+'-'+pad(end.getMonth()+1)+'-'+pad(end.getDate());
+  updateDateMeta();
+  renderLanes();
+  renderSurcharges();
+})();
+</script>
+</body>
+</html>.totals{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
 .tot-card{background:#f8f9fb;border-radius:6px;padding:10px 12px}
 .tot-lbl{font-size:11px;color:#888;margin-bottom:3px}
 .tot-val{font-size:18px;font-weight:600;color:#003366}
