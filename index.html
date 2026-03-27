@@ -320,6 +320,8 @@ function generateEmail(){
     surBlock = '  As per carrier tariff';
   }
 
+  const condLines=conditions.split('\n').map(l=>'  · '+l.trim()).filter(l=>l.trim()!=='  ·').join('\n');
+
   let freeTimeBlock='';
   if(ftpol||ftpod){
     freeTimeBlock=`FREE TIME\n`;
